@@ -2,24 +2,25 @@ ZONE := us-central1-f
 TEST_VM := gvisor-cos-test-vm
 PROJ := golang-org
 NETWORK := golang
+HUB := docker-public.kubernetes.zone
 
 # Docker environment for the sandbox server itself (containing docker CLI, etc), running
 # in a privileged container.
 docker:
-	docker build -f Dockerfile --tag=golang/playground-sandbox ..
-	docker tag golang/playground-sandbox gcr.io/$(PROJ)/playground-sandbox:latest
+	docker buildx build --platform linux/amd64 -f Dockerfile --tag=golang/playground-sandbox ..
+	docker tag golang/playground-sandbox $(HUB)/$(PROJ)/playground-sandbox:latest
 
 # dockergvisor builds the golang/playground-sandbox-gvisor docker
 # image, which is the environment that the untrusted programs run in
 # (a busybox:glibc world with this directory's sandbox binary which
 # runs in --mode=contained)
 dockergvisor:
-	docker build -f Dockerfile.gvisor --tag=golang/playground-sandbox-gvisor ..
-	docker tag golang/playground-sandbox-gvisor gcr.io/$(PROJ)/playground-sandbox-gvisor:latest
+	docker buildx build --platform linux/amd64 -f Dockerfile.gvisor --tag=golang/playground-sandbox-gvisor ..
+	docker tag golang/playground-sandbox-gvisor $(HUB)/$(PROJ)/playground-sandbox-gvisor:latest
 
 push: docker dockergvisor
-	docker push gcr.io/$(PROJ)/playground-sandbox:latest
-	docker push gcr.io/$(PROJ)/playground-sandbox-gvisor:latest
+	docker push $(HUB)/$(PROJ)/playground-sandbox:latest
+	docker push $(HUB)/$(PROJ)/playground-sandbox-gvisor:latest
 
 # runlocal runs the sandbox server locally, for use with the frontend
 # parent directory's "test_nacl" or "test_gvisor" test targets.
